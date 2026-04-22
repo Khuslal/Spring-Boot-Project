@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - MobileShop</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f5f7fa;
+        }
+
+        .admin-navbar {
+            background: #1a1a2e !important;
+        }
+
+        .admin-navbar .nav-link {
+            display: flex !important;
+            align-items: center !important;
+            gap: 8px;
+            padding: 10px 15px !important;
+            color: rgba(255, 255, 255, 0.85) !important;
+            border-radius: 8px;
+            text-decoration: none;
+        }
+
+        .admin-navbar .nav-link:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff !important;
+        }
+
+        .admin-navbar .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #00d4ff !important;
+            font-weight: 700;
+        }
+
+        .product-thumbnail {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Admin Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark admin-navbar">
+        <div class="container-fluid">
+            <a class="navbar-brand" th:href="@{/admin/dashboard}">
+                <i class="fas fa-cogs"></i>Admin Panel
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="adminNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/admin/dashboard}">
+                            <i class="fas fa-tachometer-alt"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/admin/products}">
+                            <i class="fas fa-box"></i>Products
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/admin/orders}">
+                            <i class="fas fa-shopping-cart"></i>Orders
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/admin/customers}">
+                            <i class="fas fa-users"></i>Customers
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown" sec:authorize="isAuthenticated()">
+                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle"></i>Admin
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" th:href="@{/admin/profile}"><i
+                                        class="fas fa-user me-2"></i>Profile</a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item text-danger" th:href="@{/logout}"><i
+                                        class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container-fluid mt-4" style="padding-top: 80px;">
+        <div class="dashboard-header">
+            <h1><i class="fas fa-chart-pie me-2"></i>Dashboard Overview</h1>
+            <p>Monitor your store performance and manage operations</p>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="row"
+            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px;">
+            <div class="stat-card">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div
+                        style="width: 50px; height: 50px; background: #e8f5e9; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #27ae60; font-size: 1.5rem;">
+                        <i class="fas fa-rupee-sign"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 1.8rem;">₹ <span
+                                th:text="${#numbers.formatDecimal(totalRevenue, 0, 0)}">0</span></h3>
+                        <p style="margin: 0; color: #666; font-size: 0.9rem;">Total Revenue</p>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div
+                        style="width: 50px; height: 50px; background: #e3f2fd; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #2196f3; font-size: 1.5rem;">
+                        <i class="fas fa-shopping-bag"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 1.8rem;" th:text="${totalOrders}">0</h3>
+                        <p style="margin: 0; color: #666; font-size: 0.9rem;">Total Orders</p>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div
+                        style="width: 50px; height: 50px; background: #fff3e0; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #ff9800; font-size: 1.5rem;">
+                        <i class="fas fa-boxes"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 1.8rem;" th:text="${products.size()}">0</h3>
+                        <p style="margin: 0; color: #666; font-size: 0.9rem;">Products</p>
+                    </div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div
+                        style="width: 50px; height: 50px; background: #f3e5f5; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #9c27b0; font-size: 1.5rem;">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 1.8rem;" th:text="${customers.size()}">0</h3>
+                        <p style="margin: 0; color: #666; font-size: 0.9rem;">Customers</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Products Table -->
+        <div class="card" style="margin-bottom: 30px;">
+            <div class="card-header">
+                <h5 style="margin: 0;"><i class="fas fa-box me-2"></i>Product Management</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Product</th>
+                                <th>Brand</th>
+                                <th>Price</th>
+                                <th>Stock</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="product : ${products}">
+                                <td th:text="${product.productId}"></td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <img th:if="${product.productId != null}"
+                                            th:src="@{/dashboard/image/{id}(id=${product.productId})}" alt="Product"
+                                            style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;">
+                                        <span th:text="${product.productName}"></span>
+                                    </div>
+                                </td>
+                                <td th:text="${product.brand}"></td>
+                                <td>₹ <span th:text="${#numbers.formatDecimal(product.price, 0, 0)}"></span></td>
+                                <td>
+                                    <span
+                                        th:class="${product.availableStock > 10 ? 'badge bg-success' : product.availableStock > 5 ? 'badge bg-warning' : 'badge bg-danger'}"
+                                        th:text="${product.availableStock}"></span>
+                                </td>
+                                <td>
+                                    <span
+                                        th:class="${product.status == 'ACTIVE' ? 'badge bg-success' : 'badge bg-danger'}"
+                                        th:text="${product.status}"></span>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a th:href="@{/admin/product/edit/{id}(id=${product.productId})}"
+                                            class="btn btn-sm btn-outline-primary" title="Edit"><i
+                                                class="fas fa-edit"></i></a>
+                                        <a th:href="@{/admin/product/delete/{id}(id=${product.productId})}"
+                                            class="btn btn-sm btn-outline-danger" title="Delete"
+                                            onclick="return confirm('Are you sure?')"><i class="fas fa-trash"></i></a>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Orders Table -->
+        <div class="card">
+            <div class="card-header">
+                <h5 style="margin: 0;"><i class="fas fa-shopping-cart me-2"></i>Recent Orders</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Customer</th>
+                                <th>Product</th>
+                                <th>Quantity</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="order : ${orders}">
+                                <td th:text="${order.orderId}"></td>
+                                <td th:text="${order.customer.email}"></td>
+                                <td th:text="${order.product.productName}"></td>
+                                <td th:text="${order.orderedQuantity}"></td>
+                                <td>₹ <span th:text="${#numbers.formatDecimal(order.totalAmount, 0, 0)}"></span></td>
+                                <td>
+                                    <span
+                                        th:class="${order.orderStatus == 'PAID' ? 'badge bg-success' : order.orderStatus == 'PENDING_PAYMENT' ? 'badge bg-warning' : 'badge bg-danger'}"
+                                        th:text="${order.orderStatus}"></span>
+                                </td>
+                                <td th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy')}"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer style="background: #1a1a2e; color: #666; padding: 20px 0; text-align: center; margin-top: 50px;">
+        <p>&copy; 2026 MobileShop Admin Panel. All rights reserved.</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

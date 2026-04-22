@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Management - MobileShop Admin</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+
+<body>
+    <!-- Admin Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" th:href="@{/admin/dashboard}">
+                <i class="fas fa-cogs me-2"></i>Admin Panel
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="adminNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/admin/dashboard}">
+                            <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/admin/dashboard/products}">
+                            <i class="fas fa-box me-1"></i>Products
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/admin/dashboard/products/myorders}">
+                            <i class="fas fa-shopping-cart me-1"></i>Orders
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/admin/customers}">
+                            <i class="fas fa-users me-1"></i>Customers
+                        </a>
+                    </li>
+                </ul>
+
+                <ul class="navbar-nav">
+                    <li class="nav-item" sec:authorize="!isAuthenticated()">
+                        <a class="nav-link" th:href="@{/admin/login}">
+                            <i class="fas fa-sign-in-alt me-1"></i>Login
+                        </a>
+                    </li>
+                    <li class="nav-item" sec:authorize="!isAuthenticated()">
+                        <a class="nav-link" th:href="@{/admin/register}">
+                            <i class="fas fa-user-plus me-1"></i>Register
+                        </a>
+                    </li>
+
+                    <li class="nav-item dropdown" sec:authorize="isAuthenticated()">
+                        <a class="nav-link dropdown-toggle" href="#" id="adminProfileDropdown" role="button"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-user-circle fa-lg"></i>
+                            <span class="ms-1">Admin</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="adminProfileDropdown">
+                            <li><a class="dropdown-item" th:href="@{/admin/profile}">
+                                    <i class="fas fa-user me-2"></i>My Profile
+                                </a></li>
+                            <li><a class="dropdown-item" href="#">
+                                    <i class="fas fa-cog me-2"></i>Settings
+                                </a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item text-danger" th:href="@{/logout}">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                </a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Order Statistics</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="stat-item">
+                            <span class="stat-label">Total Orders:</span>
+                            <span class="stat-value" th:text="${orders.size()}"></span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Pending Orders:</span>
+                            <span class="stat-value"
+                                th:text="${#aggregates.sum(orders.![status == 'PENDING' ? 1 : 0])}"></span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Processing Orders:</span>
+                            <span class="stat-value"
+                                th:text="${#aggregates.sum(orders.![status == 'PROCESSING' ? 1 : 0])}"></span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Shipped Orders:</span>
+                            <span class="stat-value"
+                                th:text="${#aggregates.sum(orders.![status == 'SHIPPED' ? 1 : 0])}"></span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Delivered Orders:</span>
+                            <span class="stat-value"
+                                th:text="${#aggregates.sum(orders.![status == 'DELIVERED' ? 1 : 0])}"></span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Cancelled Orders:</span>
+                            <span class="stat-value"
+                                th:text="${#aggregates.sum(orders.![status == 'CANCELLED' ? 1 : 0])}"></span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Total Revenue:</span>
+                            <span class="stat-value">₹ <span
+                                    th:text="${#aggregates.sum(orders.![status != 'CANCELLED' ? totalAmount : 0])}"></span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5 class="mb-0">Quick Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <button class="btn btn-outline-primary w-100 mb-2" onclick="exportOrders()">
+                            <i class="fas fa-download me-2"></i>Export Orders
+                        </button>
+                        <button class="btn btn-outline-secondary w-100" onclick="printOrders()">
+                            <i class="fas fa-print me-2"></i>Print Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-9">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Order Management</h2>
+                    <div class="d-flex gap-2">
+                        <select class="form-select" id="statusFilter" style="width: auto;">
+                            <option value="all">All Status</option>
+                            <option value="PENDING_PAYMENT">Pending Payment</option>
+                            <option value="PAID">Paid</option>
+                            <option value="SHIPPED">Shipped</option>
+                            <option value="DELIVERED">Delivered</option>
+                            <option value="CANCELLED">Cancelled</option>
+                        </select>
+                        <input type="text" class="form-control" id="searchInput" placeholder="Search orders..."
+                            style="width: 250px;">
+                    </div>
+                </div>
+
+                <!-- Orders Table -->
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped" id="ordersTable">
+                                <thead>
+                                    <tr>
+                                        <th>Order ID</th>
+                                        <th>Customer</th>
+                                        <th>Product</th>
+                                        <th>Quantity</th>
+                                        <th>Total Amount</th>
+                                        <th>Status</th>
+                                        <th>Order Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="order : ${orders}">
+                                        <td th:text="${order.orderId}"></td>
+                                        <td>
+                                            <div>
+                                                <strong th:text="${order.customer.fullName}"></strong><br>
+                                                <small class="text-muted" th:text="${order.customer.contact}"></small>
+                                            </div>
+                                        </td>
+                                        <td th:text="${order.product.productName}"></td>
+                                        <td th:text="${order.orderedQuantity}"></td>
+                                        <td>₹ <span
+                                                th:text="${#numbers.formatDecimal(order.product.price * order.orderedQuantity, 0, 0)}"></span>
+                                        </td>
+                                        <td>
+                                            <span th:class="${order.orderStatus == 'PENDING_PAYMENT' ? 'badge bg-warning' :
+                                                             order.orderStatus == 'PAID' ? 'badge bg-success' :
+                                                             order.orderStatus == 'CANCELLED' ? 'badge bg-danger' :
+                                                             'badge bg-secondary'}"
+                                                th:text="${order.orderStatus}"></span>
+                                        </td>
+                                        <td th:text="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}"></td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <button class="btn btn-sm btn-outline-info"
+                                                    onclick="viewOrderDetails(this)" th:data-order-id="${order.orderId}"
+                                                    th:data-customer="${order.customer.fullName}"
+                                                    th:data-product="${order.product.productName}"
+                                                    th:data-quantity="${order.orderedQuantity}"
+                                                    th:data-amount="${order.product.price * order.orderedQuantity}"
+                                                    th:data-status="${order.orderStatus}"
+                                                    th:data-date="${#temporals.format(order.orderDate, 'dd/MM/yyyy HH:mm')}"
+                                                    th:data-address="${order.shippingAddress}">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+
+                                                <div class="dropdown">
+                                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                                                        type="button" data-bs-toggle="dropdown">
+                                                        <i class="fas fa-cog"></i>
+                                                    </button>
+                                                    <ul class="dropdown-menu">
+                                                        <li th:if="${order.orderStatus == 'PENDING_PAYMENT'}">
+                                                            <form th:action="@{/admin/order/status}" method="post"
+                                                                style="display: inline;">
+                                                                <input type="hidden" name="orderId"
+                                                                    th:value="${order.orderId}">
+                                                                <input type="hidden" name="status" value="PAID">
+                                                                <button type="submit" class="dropdown-item">
+                                                                    <i class="fas fa-check text-success me-2"></i>Mark
+                                                                    as Paid
+                                                                </button>
+                                                            </form>
+                                                        </li>
+                                                        <li th:if="${order.orderStatus == 'PAID'}">
+                                                            <form th:action="@{/admin/order/status}" method="post"
+                                                                style="display: inline;">
+                                                                <input type="hidden" name="orderId"
+                                                                    th:value="${order.orderId}">
+                                                                <input type="hidden" name="status" value="SHIPPED">
+                                                                <button type="submit" class="dropdown-item">
+                                                                    <i
+                                                                        class="fas fa-shipping-fast text-primary me-2"></i>Mark
+                                                                    as Shipped
+                                                                </button>
+                                                            </form>
+                                                        </li>
+                                                        <li th:if="${order.orderStatus == 'SHIPPED'}">
+                                                            <form th:action="@{/admin/order/status}" method="post"
+                                                                style="display: inline;">
+                                                                <input type="hidden" name="orderId"
+                                                                    th:value="${order.orderId}">
+                                                                <input type="hidden" name="status" value="DELIVERED">
+                                                                <button type="submit" class="dropdown-item">
+                                                                    <i
+                                                                        class="fas fa-check-circle text-success me-2"></i>Mark
+                                                                    as Delivered
+                                                                </button>
+                                                            </form>
+                                                        </li>
+                                                        <li>
+                                                            <hr class="dropdown-divider">
+                                                        </li>
+                                                        <li
+                                                            th:if="${order.orderStatus != 'CANCELLED' && order.orderStatus != 'DELIVERED'}">
+                                                            <form th:action="@{/admin/order/cancel}" method="post"
+                                                                style="display: inline;">
+                                                                <input type="hidden" name="orderId"
+                                                                    th:value="${order.orderId}">
+                                                                <button type="submit" class="dropdown-item text-danger"
+                                                                    onclick="return confirm('Are you sure you want to cancel this order?')">
+                                                                    <i class="fas fa-times me-2"></i>Cancel Order
+                                                                </button>
+                                                            </form>
+                                                        </li>
+                                                        <li>
+                                                            <form th:action="@{/admin/order/delete}" method="post"
+                                                                style="display: inline;">
+                                                                <input type="hidden" name="orderId"
+                                                                    th:value="${order.orderId}">
+                                                                <button type="submit" class="dropdown-item text-danger"
+                                                                    onclick="return confirm('Are you sure you want to delete this order? This action cannot be undone.')">
+                                                                    <i class="fas fa-trash me-2"></i>Delete Order
+                                                                </button>
+                                                            </form>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Details Modal -->
+    <div class="modal fade" id="orderDetailsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Order Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Order Information</h6>
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>Order ID:</strong></td>
+                                    <td id="modalOrderId"></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Customer:</strong></td>
+                                    <td id="modalCustomer"></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Product:</strong></td>
+                                    <td id="modalProduct"></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Quantity:</strong></td>
+                                    <td id="modalQuantity"></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Total Amount:</strong></td>
+                                    <td id="modalAmount"></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Status:</strong></td>
+                                    <td><span id="modalStatus" class="badge"></span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Order Date:</strong></td>
+                                    <td id="modalDate"></td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Shipping Information</h6>
+                            <div class="card">
+                                <div class="card-body">
+                                    <p class="mb-0" id="modalAddress"></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', function () {
+            const searchTerm = this.value.toLowerCase();
+            const rows = document.querySelectorAll('#ordersTable tbody tr');
+
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        });
+
+        // Status filter
+        document.getElementById('statusFilter').addEventListener('change', function () {
+            const filterValue = this.value;
+            const rows = document.querySelectorAll('#ordersTable tbody tr');
+
+            rows.forEach(row => {
+                const statusBadge = row.querySelector('.badge');
+                const status = statusBadge.textContent.trim();
+
+                if (filterValue === 'all' || status === filterValue) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+
+        // View order details function
+        function viewOrderDetails(button) {
+            document.getElementById('modalOrderId').textContent = button.getAttribute('data-order-id');
+            document.getElementById('modalCustomer').textContent = button.getAttribute('data-customer');
+            document.getElementById('modalProduct').textContent = button.getAttribute('data-product');
+            document.getElementById('modalQuantity').textContent = button.getAttribute('data-quantity');
+            document.getElementById('modalAmount').textContent = '₹ ' + button.getAttribute('data-amount');
+            document.getElementById('modalStatus').textContent = button.getAttribute('data-status');
+            document.getElementById('modalDate').textContent = button.getAttribute('data-date');
+            document.getElementById('modalAddress').textContent = button.getAttribute('data-address');
+
+            // Set status badge color
+            const statusElement = document.getElementById('modalStatus');
+            const status = button.getAttribute('data-status');
+            statusElement.className = 'badge';
+
+            if (status === 'PENDING_PAYMENT') statusElement.classList.add('bg-warning');
+            else if (status === 'PAID') statusElement.classList.add('bg-success');
+            else if (status === 'SHIPPED') statusElement.classList.add('bg-primary');
+            else if (status === 'DELIVERED') statusElement.classList.add('bg-success');
+            else statusElement.classList.add('bg-danger');
+
+            const modal = new bootstrap.Modal(document.getElementById('orderDetailsModal'));
+            modal.show();
+        }
+
+        // Export orders function
+        function exportOrders() {
+            // This would typically call a backend endpoint to export orders
+            alert('Export functionality would be implemented here');
+        }
+
+        // Print orders function
+        function printOrders() {
+            window.print();
+        }
+    </script>
+</body>
+
+</html>

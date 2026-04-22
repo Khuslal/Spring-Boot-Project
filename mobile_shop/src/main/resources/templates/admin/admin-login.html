@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - MobileShop</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+        }
+
+        /* Navbar */
+        .navbar-dark {
+            background: #0f0f0f !important;
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            color: #00d4ff !important;
+        }
+
+        /* Auth Container */
+        .admin-auth-container {
+            display: flex;
+            max-width: 1100px;
+            margin: 50px auto;
+            gap: 30px;
+            padding: 0 20px;
+            flex-wrap: wrap;
+        }
+
+        .admin-auth-card {
+            flex: 1;
+            min-width: 400px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .admin-info-panel {
+            flex: 1;
+            min-width: 300px;
+            background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+            border-radius: 16px;
+            padding: 40px;
+            color: white;
+            display: flex;
+            align-items: center;
+        }
+
+        /* Auth Header */
+        .admin-auth-header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            padding: 40px 30px;
+            text-align: center;
+            color: white;
+        }
+
+        .admin-auth-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 2rem;
+            color: white;
+        }
+
+        .admin-auth-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .admin-auth-subtitle {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        /* Auth Form */
+        .admin-auth-form {
+            padding: 40px 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .admin-input {
+            padding: 14px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .admin-input:focus {
+            border-color: #00d4ff;
+            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+            outline: none;
+        }
+
+        .password-input {
+            position: relative;
+        }
+
+        .password-input input {
+            padding-right: 50px;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .admin-security-notice {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 12px 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            color: #856404;
+            font-size: 0.85rem;
+        }
+
+        .btn-admin {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-admin:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .alert-admin {
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+
+        /* Auth Footer */
+        .admin-auth-footer {
+            background: #f8f9fa;
+            padding: 20px 30px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .admin-features {
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+        }
+
+        .admin-feature {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            color: #666;
+            font-size: 0.8rem;
+        }
+
+        .admin-feature i {
+            font-size: 1.2rem;
+            color: #00d4ff;
+        }
+
+        /* Info Panel */
+        .admin-info-content h3 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+
+        .admin-info-content ul {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0;
+        }
+
+        .admin-info-content li {
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+        }
+
+        .admin-contact {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .admin-contact p {
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        /* Footer */
+        .admin-footer {
+            margin-top: 50px;
+            padding: 20px 0;
+            background: #0f0f0f;
+            color: #666;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .admin-auth-container {
+                flex-direction: column;
+                margin: 20px auto;
+            }
+
+            .admin-info-panel {
+                order: -1;
+            }
+        }
+    </style>
+</head>
+
+<body class="admin-auth-body">
+    <!-- Admin Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" th:href="@{/admin/dashboard}">
+                <i class="fas fa-cogs me-2"></i>Admin Panel
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="adminNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link" th:href="@{/admin/dashboard}">Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" th:href="@{/admin/products}">Products</a></li>
+                    <li class="nav-item"><a class="nav-link" th:href="@{/admin/orders}">Orders</a></li>
+                    <li class="nav-item"><a class="nav-link" th:href="@{/admin/customers}">Customers</a></li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item" sec:authorize="!isAuthenticated()">
+                        <a class="nav-link" th:href="@{/admin/login}">Login</a>
+                    </li>
+                    <li class="nav-item" sec:authorize="isAuthenticated()">
+                        <a class="nav-link text-danger" th:href="@{/logout}">Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Admin Auth Container -->
+    <div class="admin-auth-container">
+        <!-- Login Card -->
+        <div class="admin-auth-card">
+            <div class="admin-auth-header">
+                <div class="admin-auth-icon">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h2 class="admin-auth-title">Admin Portal</h2>
+                <p class="admin-auth-subtitle">Secure access for administrators only</p>
+            </div>
+
+            <div class="admin-auth-form">
+                <form th:action="@{/admin/login}" method="post">
+                    <input type="hidden" name="admin" value="true" />
+
+                    <div class="mb-3">
+                        <label class="form-label"><i class="fas fa-envelope me-2"></i>Admin Email</label>
+                        <input type="email" class="form-control" name="email" placeholder="Enter admin email" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label"><i class="fas fa-key me-2"></i>Password</label>
+                        <input type="password" class="form-control" name="password" placeholder="Enter password"
+                            required>
+                    </div>
+
+                    <button type="submit" class="btn btn-login">
+                        <i class="fas fa-sign-in-alt me-2"></i>Access Admin Panel
+                    </button>
+                </form>
+
+                <!-- Feedback Messages -->
+                <div class="alert alert-danger alert-admin" th:if="${param.error}" role="alert"
+                    style="background: #f8d7da; color: #721c24; border-left: 4px solid #721c24;">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <span>Invalid credentials. Please try again.</span>
+                </div>
+                <div class="alert alert-success alert-admin" th:if="${param.logout}" role="alert"
+                    style="background: #d4edda; color: #155724; border-left: 4px solid #155724;">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <span>Logged out successfully.</span>
+                </div>
+                <div class="alert alert-success alert-admin" th:if="${success}" role="alert"
+                    style="background: #d4edda; color: #155724; border-left: 4px solid #155724;">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <span th:text="${success}"></span>
+                </div>
+            </div>
+
+            <div class="admin-auth-footer">
+                <div class="admin-features">
+                    <div class="admin-feature"><i class="fas fa-chart-line"></i><span>Dashboard</span></div>
+                    <div class="admin-feature"><i class="fas fa-boxes"></i><span>Inventory</span></div>
+                    <div class="admin-feature"><i class="fas fa-users"></i><span>Customers</span></div>
+                    <div class="admin-feature"><i class="fas fa-shopping-cart"></i><span>Orders</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Info Panel -->
+        <div class="admin-info-panel">
+            <div class="admin-info-content">
+                <h3><i class="fas fa-info-circle me-2"></i>Administrator Access</h3>
+                <p>This secure portal provides access to:</p>
+                <ul>
+                    <li><i class="fas fa-check me-2"></i>Product management</li>
+                    <li><i class="fas fa-check me-2"></i>Order processing</li>
+                    <li><i class="fas fa-check me-2"></i>Sales analytics</li>
+                    <li><i class="fas fa-check me-2"></i>System configuration</li>
+                    <li><i class="fas fa-check me-2"></i>User management</li>
+                </ul>
+                <div class="admin-contact">
+                    <p><strong>Need help?</strong></p>
+                    <p><i class="fas fa-envelope me-2"></i>admin@mobileshop.com</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="admin-footer">
+        <div class="container">
+            <p>&copy; 2026 MobileShop. Admin Portal</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const passwordIcon = document.getElementById('password-icon');
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                passwordIcon.className = 'fas fa-eye-slash';
+            } else {
+                passwordInput.type = 'password';
+                passwordIcon.className = 'fas fa-eye';
+            }
+        }
+    </script>
+</body>
+
+</html>

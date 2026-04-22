@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Failed - MobileShop</title>
+    <meta name="description" content="Your payment could not be processed. Please try again or contact support.">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+
+<body class="auth-body">
+    <!-- Customer Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-mobile-alt me-2"></i>
+                MobileShop
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/products}">Products</a>
+                    </li>
+                </ul>
+
+                <ul class="navbar-nav">
+                    <!-- If NOT logged in -->
+                    <li class="nav-item" sec:authorize="!isAuthenticated()">
+                        <a class="nav-link" th:href="@{/login(redirect='/products')}">
+                            <i class="fas fa-sign-in-alt me-1"></i>Login
+                        </a>
+                    </li>
+                    <li class="nav-item" sec:authorize="!isAuthenticated()">
+                        <a class="nav-link" th:href="@{/register}">
+                            <i class="fas fa-user-plus me-1"></i>Sign Up
+                        </a>
+                    </li>
+
+                    <!-- If logged in - Show Profile Icon -->
+                    <li class="nav-item dropdown" sec:authorize="hasRole('USER')">
+                        <a class="nav-link dropdown-toggle" href="#" id="profileDropdown" role="button"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-user-circle fa-lg"></i>
+                            <span class="ms-1 d-none d-sm-inline">My Account</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
+                            <li><a class="dropdown-item" th:href="@{/profile}">
+                                    <i class="fas fa-user me-2"></i>My Profile
+                                </a></li>
+                            <li><a class="dropdown-item" th:href="@{/orders}">
+                                    <i class="fas fa-shopping-bag me-2"></i>My Orders
+                                </a></li>
+                            <li><a class="dropdown-item" th:href="@{/cart}">
+                                    <i class="fas fa-shopping-cart me-2"></i>My Cart
+                                </a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item text-danger" th:href="@{/logout}">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                </a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <!-- Failure Container -->
+    <div class="auth-container">
+        <div class="auth-card failure-card">
+            <div class="auth-header">
+                <div class="auth-icon failure-icon">
+                    <i class="fas fa-times-circle"></i>
+                </div>
+                <h2 class="auth-title text-danger">Payment Failed</h2>
+                <p class="auth-subtitle">We couldn't process your payment. Please try again or contact support.</p>
+            </div>
+
+            <!-- Error Details -->
+            <div class="error-details">
+                <div class="alert alert-danger">
+                    <h6><i class="fas fa-exclamation-triangle me-2"></i>Payment Error</h6>
+                    <p class="mb-0">Your payment could not be completed. This might be due to:</p>
+                    <ul class="mb-0 mt-2">
+                        <li>Insufficient funds in your eSewa account</li>
+                        <li>Invalid payment credentials</li>
+                        <li>Network connectivity issues</li>
+                        <li>Temporary service unavailability</li>
+                    </ul>
+                </div>
+
+                <div class="troubleshooting-steps">
+                    <h6>What you can do:</h6>
+                    <ol>
+                        <li>Check your eSewa account balance</li>
+                        <li>Verify your login credentials</li>
+                        <li>Try the payment again</li>
+                        <li>Contact eSewa support if the issue persists</li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="failure-actions">
+                <a href="/orders" class="btn btn-primary me-2">
+                    <i class="fas fa-list me-2"></i>View My Orders
+                </a>
+                <a href="/products" class="btn btn-outline-primary me-2">
+                    <i class="fas fa-shopping-bag me-2"></i>Continue Shopping
+                </a>
+                <a href="javascript:history.back()" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Try Payment Again
+                </a>
+            </div>
+
+            <!-- Support Information -->
+            <div class="support-info mt-4">
+                <h6>Need Help?</h6>
+                <div class="support-contact">
+                    <p><i class="fas fa-phone me-2"></i><strong>Customer Support:</strong> +977-1234567890</p>
+                    <p><i class="fas fa-envelope me-2"></i><strong>Email:</strong> support@mobileshop.com</p>
+                    <p><i class="fas fa-clock me-2"></i><strong>Support Hours:</strong> 9 AM - 6 PM (Nepal Time)</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h5>MobileShop</h5>
+                    <p>Your trusted partner for mobile devices and accessories.</p>
+                </div>
+                <div class="footer-section">
+                    <h5>Quick Links</h5>
+                    <ul>
+                        <li><a href="/">Home</a></li>
+                        <li><a href="/products">Products</a></li>
+                        <li><a href="/orders">My Orders</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h5>Contact</h5>
+                    <p><i class="fas fa-phone me-2"></i>+977-1234567890</p>
+                    <p><i class="fas fa-envelope me-2"></i>support@mobileshop.com</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 MobileShop. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

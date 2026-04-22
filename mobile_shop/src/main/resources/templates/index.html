@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MobileShop - Premium Smartphones & Accessories</title>
+    <meta name="description"
+        content="Discover the latest smartphones, tablets, and accessories at MobileShop. Best prices, secure payments, and fast delivery.">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+
+<body>
+    <!-- Customer Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-mobile-alt me-2"></i>
+                MobileShop
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/products}">Products</a>
+                    </li>
+                </ul>
+
+                <ul class="navbar-nav">
+                    <!-- If NOT logged in -->
+                    <li class="nav-item" sec:authorize="!isAuthenticated()">
+                        <a class="nav-link" th:href="@{/login(redirect='/products')}">
+                            <i class="fas fa-sign-in-alt me-1"></i>Login
+                        </a>
+                    </li>
+                    <li class="nav-item" sec:authorize="!isAuthenticated()">
+                        <a class="nav-link" th:href="@{/register}">
+                            <i class="fas fa-user-plus me-1"></i>Sign Up
+                        </a>
+                    </li>
+
+                    <!-- If logged in - Show Profile Icon -->
+                    <li class="nav-item dropdown" sec:authorize="hasRole('USER')">
+                        <a class="nav-link dropdown-toggle" href="#" id="profileDropdown" role="button"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-user-circle fa-lg"></i>
+                            <span class="ms-1 d-none d-sm-inline">My Account</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
+                            <li><a class="dropdown-item" th:href="@{/profile}">
+                                    <i class="fas fa-user me-2"></i>My Profile
+                                </a></li>
+                            <li><a class="dropdown-item" th:href="@{/orders}">
+                                    <i class="fas fa-shopping-bag me-2"></i>My Orders
+                                </a></li>
+                            <li><a class="dropdown-item" th:href="@{/cart}">
+                                    <i class="fas fa-shopping-cart me-2"></i>My Cart
+                                </a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item text-danger" th:href="@{/logout}">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                </a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container">
+            <div class="hero-content">
+                <h1 class="hero-title">Access Your Perfect Device</h1>
+                <p class="hero-subtitle">Explore the latest smartphones, tablets, and accessories with unbeatable prices
+                    and exceptional quality.</p>
+                <a href="/products" class="btn btn-light btn-lg">
+                    <i class="fas fa-shopping-cart me-2"></i>Shop Now
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="container">
+            <div class="section-title">
+                <h2>Why Choose MobileShop?</h2>
+                <p>Experience shopping like never before with our premium services and customer-focused approach.</p>
+            </div>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <i class="fas fa-shipping-fast feature-icon text-primary"></i>
+                    <h3 class="feature-title">Free Shipping</h3>
+                    <p class="feature-description">Free delivery on all orders over ₹999. Fast and reliable shipping
+                        across Nepal.</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-shield-alt feature-icon text-success"></i>
+                    <h3 class="feature-title">Secure Payments</h3>
+                    <p class="feature-description">Multiple secure payment options including eSewa, credit cards, and
+                        digital wallets.</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-undo-alt feature-icon text-warning"></i>
+                    <h3 class="feature-title">Easy Returns</h3>
+                    <p class="feature-description">30-day return policy on all products. Hassle-free returns and
+                        exchanges.</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-headset feature-icon text-info"></i>
+                    <h3 class="feature-title">24/7 Support</h3>
+                    <p class="feature-description">Round-the-clock customer support to help you with any queries or
+                        issues.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Trending Products Section -->
+    <section class="section">
+        <div class="container">
+            <div class="section-title">
+                <h2>🔥 Trending Products</h2>
+                <p>Most popular smartphones and accessories loved by our customers.</p>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-lg-3 col-md-4 col-sm-6" th:each="p : ${trendingProducts}">
+                    <div class="product-card">
+                        <!-- Trending Badge -->
+                        <div class="badge bg-danger position-absolute top-0 start-0 m-2" style="z-index: 10;">
+                            <i class="fas fa-fire me-1"></i>Trending
+                        </div>
+
+                        <div class="product-image-container">
+                            <img th:src="@{/dashboard/image/{id}(id=${p.productId})}" alt="Product Image"
+                                class="product-image">
+                        </div>
+                        <div class="product-info">
+                            <h3 class="product-title" th:text="${p.productName}"></h3>
+                            <p class="product-brand" th:text="${p.brand}"></p>
+
+                            <!-- Rating and Review Count -->
+                            <div class="product-rating">
+                                <div class="stars">
+                                    <!-- Display stars based on rating -->
+                                    <th:block th:if="${p.rating >= 5}">
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                    </th:block>
+                                    <th:block th:if="${p.rating < 5 && p.rating >= 4}">
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star-half-alt"></i>
+                                    </th:block>
+                                    <th:block th:if="${p.rating < 4 && p.rating >= 3}">
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star-half-alt"></i>
+                                        <i class="fas fa-star"></i> (empty)
+                                    </th:block>
+                                </div>
+                                <span class="rating-count"
+                                    th:text="|(' + ${#numbers.formatDecimal(p.rating, 1, 1)} + ') ' + ${p.reviewCount} + ' reviews'|"></span>
+                            </div>
+
+                            <!-- Popularity Info -->
+                            <small class="text-muted d-block mb-2">
+                                <i class="fas fa-shopping-bag me-1" style="color: #ff6b6b;"></i>
+                                <span th:text="|${p.soldStock} sold|"></span>
+                            </small>
+
+                            <p class="product-price">₹ <span th:text="${#numbers.formatDecimal(p.price, 0, 0)}"></span>
+                            </p>
+
+                            <div class="d-grid gap-2">
+                                <a sec:authorize="isAuthenticated()" th:href="@{/dashboard/{id}(id=${p.productId})}"
+                                    class="btn btn-primary">
+                                    <i class="fas fa-shopping-cart me-1"></i>Buy Now
+                                </a>
+                                <a sec:authorize="!isAuthenticated()" href="/login" class="btn btn-outline-primary">
+                                    <i class="fas fa-sign-in-alt me-1"></i>Login to Buy
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Recommended Products Section -->
+    <section class="section" th:if="${recommendedProducts != null}">
+        <div class="container">
+            <div class="section-title">
+                <h2>🤖 Recommended for You</h2>
+                <p>Personalized recommendations based on your preferences.</p>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-lg-3 col-md-4 col-sm-6" th:each="p : ${recommendedProducts}">
+                    <div class="product-card">
+                        <div class="product-image-container">
+                            <img th:src="@{/dashboard/image/{id}(id=${p.productId})}" alt="Product Image"
+                                class="product-image">
+                        </div>
+                        <div class="product-info">
+                            <h3 class="product-title" th:text="${p.productName}"></h3>
+                            <p class="product-brand" th:text="${p.brand}"></p>
+                            <div class="product-rating">
+                                <div class="stars">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                </div>
+                                <span class="rating-count">(5.0)</span>
+                            </div>
+                            <p class="product-price">₹ <span th:text="${#numbers.formatDecimal(p.price, 0, 0)}"></span>
+                            </p>
+
+                            <a th:href="@{/dashboard/{id}(id=${p.productId})}" class="btn btn-success w-100">
+                                <i class="fas fa-shopping-cart me-1"></i>Buy Now
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Newsletter Section -->
+    <section class="features">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6">
+                    <h3>Stay Updated</h3>
+                    <p>Subscribe to our newsletter for the latest product launches, exclusive deals, and tech updates.
+                    </p>
+                </div>
+                <div class="col-lg-6">
+                    <div class="input-group">
+                        <input type="email" class="form-control" placeholder="Enter your email">
+                        <button class="btn btn-primary" type="button">Subscribe</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>MobileShop</h3>
+                    <p>Your trusted partner for premium mobile devices and accessories. Quality products, exceptional
+                        service.</p>
+                    <div class="social-links">
+                        <a href="#" class="me-3"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="me-3"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="me-3"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+
+                <div class="footer-section">
+                    <h3>Quick Links</h3>
+                    <ul>
+                        <li><a href="/">Home</a></li>
+                        <li><a href="/products">Products</a></li>
+                        <li><a href="#features">Features</a></li>
+                        <li><a href="/login">Login</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-section">
+                    <h3>Customer Service</h3>
+                    <ul>
+                        <li><a href="#">Contact Us</a></li>
+                        <li><a href="#">Shipping Info</a></li>
+                        <li><a href="#">Returns</a></li>
+                        <li><a href="#">FAQ</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-section">
+                    <h3>Contact Info</h3>
+                    <ul>
+                        <li><i class="fas fa-phone me-2"></i>+977-123-456789</li>
+                        <li><i class="fas fa-envelope me-2"></i>info@mobileshop.com</li>
+                        <li><i class="fas fa-map-marker-alt me-2"></i>Kathmandu, Nepal</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <p>&copy; 2026 MobileShop. All rights reserved. | Secure payments powered by eSewa</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
