@@ -94,7 +94,7 @@ public class PaymentController {
             model.addAttribute("signature", paymentService.generateSignature(orderId, order.getTotalAmount()));
 
             // Return the payment form view
-            return "esewa-pay";
+            return "customer/esewa-pay";
         } catch (Exception e) {
             e.printStackTrace();
             model.addAttribute("error", "Payment processing error: " + e.getMessage());
