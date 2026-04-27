@@ -8,6 +8,7 @@ import com.mobile_shop.mobile_shop.repository.CustomerRepository;
 import com.mobile_shop.mobile_shop.repository.ProductRepository;
 import com.mobile_shop.mobile_shop.service.CartService;
 import com.mobile_shop.mobile_shop.service.OrderService;
+import com.mobile_shop.mobile_shop.service.PaymentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -34,6 +35,9 @@ public class OrderController {
     @Autowired
     private ProductRepository productRepository;
 
+    @Autowired
+    private PaymentService paymentService;
+
     @GetMapping("/checkout")
     public String checkout(Authentication authentication, Model model) {
         if (authentication != null) {
@@ -54,32 +58,46 @@ public class OrderController {
             @RequestParam Integer quantity,
             @RequestParam String shippingAddress,
             Authentication authentication) {
-        // log incoming request
-        System.out.println("OrderController.placeOrder called: productId=" + productId + ", quantity=" + quantity
-                + ", shippingAddress='" + shippingAddress + "'");
+        try {
+            // log incoming request
+            System.out.println("OrderController.placeOrder called: productId=" + productId + ", quantity=" + quantity
+                    + ", shippingAddress='" + shippingAddress + "'");
 
-        // user must be authenticated to place a direct order
-        if (authentication == null || !authentication.isAuthenticated()) {
-            // redirect back to product detail so user can login first
-            return "redirect:/login?redirect=/dashboard/" + productId;
+            // user must be authenticated to place a direct order
+            if (authentication == null || !authentication.isAuthenticated()) {
+                // redirect back to product detail so user can login first
+                return "redirect:/login?redirect=/dashboard/" + productId;
+            }
+
+            Customer customer = customerRepository.findByEmail(authentication.getName()).orElse(null);
+            Product product = productRepository.findById(productId).orElse(null);
+
+            if (customer != null && product != null) {
+                // Create a cart item for single product order
+                CartItem cartItem = new CartItem();
+                cartItem.setCustomer(customer);
+                cartItem.setProduct(product);
+                cartItem.setQuantity(quantity);
+
+                List<CartItem> cartItems = List.of(cartItem);
+                Order order = orderService.createOrder(customer, cartItems, shippingAddress);
+                order.setPaymentRefId(paymentService.generatePaymentReferenceId());
+                order = orderService.save(order);
+
+                if (order.getOrderId() == null) {
+                    throw new RuntimeException("Order ID is null after saving");
+                }
+
+                return "redirect:/payment/process/" + order.getOrderId();
+            }
+
+            // fall back to cart to avoid exposing order endpoint
+            return "redirect:/cart";
+        } catch (Exception e) {
+            System.err.println("Error in placeOrder: " + e.getMessage());
+            e.printStackTrace();
+            return "redirect:/error?message=" + e.getMessage();
         }
-
-        Customer customer = customerRepository.findByEmail(authentication.getName()).orElse(null);
-        Product product = productRepository.findById(productId).orElse(null);
-
-        if (customer != null && product != null) {
-            Double totalAmount = product.getPrice() * quantity;
-            String paymentRefId = "ORD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-
-            Order order = orderService.createOrder(customer, product, quantity, shippingAddress, totalAmount);
-            order.setPaymentRefId(paymentRefId);
-            orderService.save(order);
-
-            return "redirect:/payment/process/" + order.getOrderId();
-        }
-
-        // fall back to cart to avoid exposing order endpoint
-        return "redirect:/cart";
     }
 
     // new handler for checking out entire cart
@@ -92,24 +110,21 @@ public class OrderController {
             if (customer != null) {
                 List<CartItem> cartItems = cartService.getCartItems(customer);
                 if (!cartItems.isEmpty()) {
-                    for (CartItem ci : cartItems) {
-                        Double totalAmount = ci.getProduct().getPrice() * ci.getQuantity();
-                        String paymentRefId = "ORD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-                        Order order = orderService.createOrder(customer, ci.getProduct(), ci.getQuantity(),
-                                shippingAddress, totalAmount);
-                        order.setPaymentRefId(paymentRefId);
-                        orderService.save(order);
-                    }
-                    // clear entire cart now that orders were created
+                    Order order = orderService.createOrder(customer, cartItems, shippingAddress);
+                    order.setPaymentRefId(paymentService.generatePaymentReferenceId());
+                    orderService.save(order);
+
+                    // Clear cart after order created
                     cartService.clearCart(customer);
                     redirectAttributes.addFlashAttribute("success",
-                            "Orders placed successfully! Visit My Orders to proceed with payments.");
+                            "Order placed successfully! Proceed with payment.");
+                    return "redirect:/payment/process/" + order.getOrderId();
                 } else {
                     redirectAttributes.addFlashAttribute("error", "Your cart is empty.");
                 }
             }
         }
-        return "redirect:/orders";
+        return "redirect:/cart";
     }
 
     @GetMapping({ "/my-orders", "/orders" })

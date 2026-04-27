@@ -55,49 +55,51 @@ public class PaymentController {
             return "redirect:/cart?error=empty";
         }
 
-        Double totalAmount = cartService.getCartTotal(customer);
+        // Create order from cart items
+        Order order = orderService.createOrder(customer, cartItems,
+                customer.getShippingAddress() != null ? customer.getShippingAddress() : "");
 
-        // Create order from first cart item
-        CartItem firstItem = cartItems.get(0);
-        Order order = new Order();
-        order.setCustomer(customer);
-        order.setProduct(firstItem.getProduct());
-        order.setOrderedQuantity(firstItem.getQuantity());
-        order.setShippingAddress(customer.getShippingAddress() != null ? customer.getShippingAddress() : "");
-        order.setTotalAmount(totalAmount);
-        order.setOrderStatus("PENDING_PAYMENT");
+        // Generate payment reference ID
         order.setPaymentRefId(paymentService.generatePaymentReferenceId());
-
         order = orderService.save(order);
-
-        // Update product stock for all cart items
-        for (CartItem item : cartItems) {
-            productService.updateStock(item.getProduct().getProductId(), item.getQuantity());
-        }
 
         // Clear cart after order created
         cartService.clearCart(customer);
 
-        // Generate eSewa payment URL and redirect
-        String paymentUrl = paymentService.generatePaymentUrl(order.getOrderId(), order.getTotalAmount());
-        return "redirect:" + paymentUrl;
+        // Show eSewa payment form for the new order
+        return "redirect:/payment/process/" + order.getOrderId();
     }
 
     /**
-     * Handle individual order payment
+     * Handle individual order payment and show eSewa payment form
      */
     @GetMapping("/process/{orderId}")
     public String processOrderPayment(@PathVariable Long orderId, Model model) {
-        Optional<Order> orderOpt = orderService.getOrderById(orderId);
-        if (orderOpt.isPresent()) {
-            Order order = orderOpt.get();
-            model.addAttribute("order", order);
+        try {
+            Optional<Order> orderOpt = orderService.getOrderById(orderId);
+            if (orderOpt.isEmpty()) {
+                return "redirect:/orders?error=order_not_found";
+            }
 
-            // Generate eSewa payment URL
-            String paymentUrl = paymentService.generatePaymentUrl(order.getOrderId(), order.getTotalAmount());
-            model.addAttribute("paymentUrl", paymentUrl);
+            Order order = orderOpt.get();
+
+            // Add payment data to model for the form
+            model.addAttribute("orderId", orderId);
+            model.addAttribute("amount", String.format("%.2f", order.getTotalAmount()));
+            model.addAttribute("totalAmount", String.format("%.2f", order.getTotalAmount()));
+            model.addAttribute("transactionUuid", String.valueOf(orderId));
+            model.addAttribute("productCode", paymentService.getMerchantCode());
+            model.addAttribute("successUrl", paymentService.getSuccessUrl());
+            model.addAttribute("failureUrl", paymentService.getFailureUrl());
+            model.addAttribute("signature", paymentService.generateSignature(orderId, order.getTotalAmount()));
+
+            // Return the payment form view
+            return "esewa-pay";
+        } catch (Exception e) {
+            e.printStackTrace();
+            model.addAttribute("error", "Payment processing error: " + e.getMessage());
+            return "error";
         }
-        return "payment/process";
     }
 
     /**
@@ -120,8 +122,10 @@ public class PaymentController {
             model.addAttribute("order", order);
         }
 
+        model.addAttribute("orderId", oid);
+        model.addAttribute("refId", refId != null ? refId : "N/A");
         model.addAttribute("success", "Payment successful! Your order has been placed.");
-        return "payment/success";
+        return "customer/payment-success";
     }
 
     /**
@@ -139,7 +143,7 @@ public class PaymentController {
         }
 
         model.addAttribute("error", "Payment failed. Please try again.");
-        return "payment/failure";
+        return "customer/payment-failed";
     }
 
     /**

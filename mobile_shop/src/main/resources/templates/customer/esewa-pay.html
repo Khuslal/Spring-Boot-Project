@@ -185,38 +185,29 @@
             <div class="order-summary mb-4">
                 <h5 class="mb-3">Order Summary</h5>
                 <div class="summary-item">
-                    <span>Product:</span>
-                    <strong th:text="${order.product.productName}">Product Name</strong>
-                </div>
-                <div class="summary-item">
-                    <span>Quantity:</span>
-                    <strong th:text="${order.orderedQuantity}">1</strong>
-                </div>
-                <div class="summary-item">
-                    <span>Unit Price:</span>
-                    <strong>₹<span th:text="${#numbers.formatDecimal(order.product.price, 0, 0)}">0</span></strong>
+                    <span>Order ID:</span>
+                    <strong th:text="${orderId}">Order ID</strong>
                 </div>
                 <div class="summary-item total-amount">
                     <span>Total Amount:</span>
-                    <strong>₹<span
-                            th:text="${#numbers.formatDecimal(order.product.price * order.orderedQuantity, 0, 0)}">0</span></strong>
+                    <strong>₹<span th:text="${#numbers.formatDecimal(totalAmount, 0, 2)}">0.00</span></strong>
                 </div>
             </div>
 
             <!-- eSewa Payment Form -->
-            <form th:action="@{https://rc-epay.esewa.com.np/api/epay/main/v2/form}" method="POST" id="esewaForm">
+            <form action="https://rc-epay.esewa.com.np/api/epay/main/v2/form" method="POST" id="esewaForm">
                 <!-- Hidden Inputs -->
-                <input type="hidden" name="amount" th:value="${order.product.price * order.orderedQuantity}" />
-                <input type="hidden" name="pdc" th:value="0" />
-                <input type="hidden" name="psc" th:value="0" />
-                <input type="hidden" name="txAmt" th:value="0" />
-                <input type="hidden" name="tAmt" th:value="${order.product.price * order.orderedQuantity}" />
-                <input type="hidden" name="pid" th:value="${order.orderId}" />
-                <input type="hidden" name="scd" th:value="${merchantId}" />
-                <input type="hidden" name="signed_field_names" th:value="${signedFieldNames}" />
+                <input type="hidden" name="amount" th:value="${amount}" />
+                <input type="hidden" name="tax_amount" value="0" />
+                <input type="hidden" name="total_amount" th:value="${totalAmount}" />
+                <input type="hidden" name="transaction_uuid" th:value="${transactionUuid}" />
+                <input type="hidden" name="product_code" th:value="${productCode}" />
+                <input type="hidden" name="product_service_charge" value="0" />
+                <input type="hidden" name="product_delivery_charge" value="0" />
+                <input type="hidden" name="success_url" th:value="${successUrl}" />
+                <input type="hidden" name="failure_url" th:value="${failureUrl}" />
+                <input type="hidden" name="signed_field_names" value="total_amount,transaction_uuid,product_code" />
                 <input type="hidden" name="signature" th:value="${signature}" />
-                <input type="hidden" name="su" th:value="${successUrl}" />
-                <input type="hidden" name="fu" th:value="${failureUrl}" />
 
                 <!-- Sandbox Info -->
                 <div class="alert alert-info small">
@@ -267,6 +258,7 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 
 </html>

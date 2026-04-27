@@ -1,15 +1,15 @@
 package com.mobile_shop.mobile_shop.service;
 
 import com.mobile_shop.mobile_shop.entity.Order;
-import com.mobile_shop.mobile_shop.entity.Product;
 import com.mobile_shop.mobile_shop.repository.OrderRepository;
-import com.mobile_shop.mobile_shop.repository.ProductRepository;
 import com.mobile_shop.mobile_shop.util.EsewaSignatureUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.ResponseEntity;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -19,9 +19,6 @@ public class PaymentService {
 
     @Autowired
     private OrderRepository orderRepository;
-
-    @Autowired
-    private ProductRepository productRepository;
 
     @Value("${esewa.merchant.code:EPAYTEST}")
     private String merchantCode;
@@ -35,10 +32,10 @@ public class PaymentService {
     @Value("${esewa.status.url:https://rc.esewa.com.np/api/epay/transaction/status}")
     private String statusUrl;
 
-    @Value("${esewa.success.url:http://localhost:8081/payment/success}")
+    @Value("${esewa.success.url:http://localhost:8080/payment/success}")
     private String successUrl;
 
-    @Value("${esewa.failure.url:http://localhost:8081/payment/failure}")
+    @Value("${esewa.failure.url:http://localhost:8080/payment/failure}")
     private String failureUrl;
 
     /**
@@ -56,13 +53,14 @@ public class PaymentService {
         }
 
         Order order = orderOpt.get();
+        Double amountToPay = order.getTotalAmount();
 
         // Use order ID as transaction UUID (must be alphanumeric and hyphen only)
         String transactionUuid = String.valueOf(orderId);
 
-        // Generate signature
+        // Generate signature using persisted order amount
         String signatureMessage = EsewaSignatureUtil.buildSignatureMessage(
-                totalAmount,
+                amountToPay,
                 transactionUuid,
                 merchantCode);
         String signature = EsewaSignatureUtil.generateSignature(merchantSecret, signatureMessage);
@@ -70,19 +68,89 @@ public class PaymentService {
         // Build complete payment URL
         StringBuilder paymentUrl = new StringBuilder();
         paymentUrl.append(baseUrl);
-        paymentUrl.append("?amount=").append(String.format("%.2f", totalAmount));
+        paymentUrl.append("?amount=")
+                .append(URLEncoder.encode(String.format("%.2f", amountToPay), StandardCharsets.UTF_8));
         paymentUrl.append("&tax_amount=0");
-        paymentUrl.append("&total_amount=").append(String.format("%.2f", totalAmount));
-        paymentUrl.append("&transaction_uuid=").append(transactionUuid);
-        paymentUrl.append("&product_code=").append(merchantCode);
+        paymentUrl.append("&total_amount=")
+                .append(URLEncoder.encode(String.format("%.2f", amountToPay), StandardCharsets.UTF_8));
+        paymentUrl.append("&transaction_uuid=").append(URLEncoder.encode(transactionUuid, StandardCharsets.UTF_8));
+        paymentUrl.append("&product_code=").append(URLEncoder.encode(merchantCode, StandardCharsets.UTF_8));
         paymentUrl.append("&product_service_charge=0");
         paymentUrl.append("&product_delivery_charge=0");
-        paymentUrl.append("&success_url=").append(successUrl);
-        paymentUrl.append("&failure_url=").append(failureUrl);
+        paymentUrl.append("&success_url=").append(URLEncoder.encode(successUrl, StandardCharsets.UTF_8));
+        paymentUrl.append("&failure_url=").append(URLEncoder.encode(failureUrl, StandardCharsets.UTF_8));
         paymentUrl.append("&signed_field_names=total_amount,transaction_uuid,product_code");
-        paymentUrl.append("&signature=").append(signature);
+        paymentUrl.append("&signature=").append(URLEncoder.encode(signature, StandardCharsets.UTF_8));
 
         return paymentUrl.toString();
+    }
+
+    public String getBaseUrl() {
+        return baseUrl;
+    }
+
+    public String getMerchantCode() {
+        return merchantCode;
+    }
+
+    public String getSuccessUrl() {
+        return successUrl;
+    }
+
+    /**
+     * Generate signature for eSewa payment
+     * 
+     * @param orderId     The order ID
+     * @param totalAmount The total amount to pay
+     * @return HMAC-SHA256 signature
+     */
+    public String generateSignature(Long orderId, Double totalAmount) {
+        Optional<Order> orderOpt = orderRepository.findById(orderId);
+        if (orderOpt.isEmpty()) {
+            throw new RuntimeException("Order not found with ID: " + orderId);
+        }
+
+        Order order = orderOpt.get();
+        Double amountToPay = order.getTotalAmount();
+
+        // Use order ID as transaction UUID (must be alphanumeric and hyphen only)
+        String transactionUuid = String.valueOf(orderId);
+
+        // Generate signature using persisted order amount
+        String signatureMessage = EsewaSignatureUtil.buildSignatureMessage(
+                amountToPay,
+                transactionUuid,
+                merchantCode);
+        return EsewaSignatureUtil.generateSignature(merchantSecret, signatureMessage);
+    }
+
+    public Map<String, String> buildEsewaFormFields(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
+
+        String amount = String.format("%.2f", order.getTotalAmount());
+        String transactionUuid = String.valueOf(order.getOrderId());
+        String signedFieldNames = "total_amount,transaction_uuid,product_code";
+        String signatureMessage = EsewaSignatureUtil.buildSignatureMessage(
+                order.getTotalAmount(),
+                transactionUuid,
+                merchantCode);
+        String signature = EsewaSignatureUtil.generateSignature(merchantSecret, signatureMessage);
+
+        Map<String, String> formFields = new HashMap<>();
+        formFields.put("amount", amount);
+        formFields.put("tax_amount", "0");
+        formFields.put("total_amount", amount);
+        formFields.put("transaction_uuid", transactionUuid);
+        formFields.put("product_code", merchantCode);
+        formFields.put("product_service_charge", "0");
+        formFields.put("product_delivery_charge", "0");
+        formFields.put("success_url", successUrl);
+        formFields.put("failure_url", failureUrl);
+        formFields.put("signed_field_names", signedFieldNames);
+        formFields.put("signature", signature);
+
+        return formFields;
     }
 
     /**
@@ -122,6 +190,10 @@ public class PaymentService {
 
             if (orderOpt.isPresent()) {
                 Order order = orderOpt.get();
+                double paidAmount = Double.parseDouble(totalAmount);
+                if (Double.compare(paidAmount, order.getTotalAmount()) != 0) {
+                    return "Payment amount mismatch. Expected " + order.getTotalAmount() + " but got " + paidAmount;
+                }
                 order.setOrderStatus("COMPLETED");
                 order.setPaymentMethod("ESEWA");
                 order.setPaymentRefId(refId != null ? refId : transactionUuid);
@@ -198,5 +270,21 @@ public class PaymentService {
      */
     public String generatePaymentReferenceId() {
         return "ORD-" + System.currentTimeMillis();
+    }
+
+    public String getBaseUrl() {
+        return baseUrl;
+    }
+
+    public String getMerchantCode() {
+        return merchantCode;
+    }
+
+    public String getSuccessUrl() {
+        return successUrl;
+    }
+
+    public String getFailureUrl() {
+        return failureUrl;
     }
 }

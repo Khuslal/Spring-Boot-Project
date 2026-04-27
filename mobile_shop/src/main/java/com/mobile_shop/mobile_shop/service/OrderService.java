@@ -1,13 +1,17 @@
 package com.mobile_shop.mobile_shop.service;
 
 import com.mobile_shop.mobile_shop.entity.Order;
+import com.mobile_shop.mobile_shop.entity.OrderItem;
 import com.mobile_shop.mobile_shop.entity.Customer;
 import com.mobile_shop.mobile_shop.entity.Product;
+import com.mobile_shop.mobile_shop.entity.CartItem;
 import com.mobile_shop.mobile_shop.repository.OrderRepository;
+import com.mobile_shop.mobile_shop.repository.OrderItemRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
+import java.util.ArrayList;
 
 @Service
 public class OrderService {
@@ -15,24 +19,62 @@ public class OrderService {
     @Autowired
     private OrderRepository orderRepository;
 
+    @Autowired
+    private OrderItemRepository orderItemRepository;
 
     @Autowired
     private ProductService productService;
 
-    public Order createOrder(Customer customer, Product product, Integer quantity,
-            String shippingAddress, Double totalAmount) {
-        Order order = new Order();
-        order.setCustomer(customer);
-        order.setProduct(product);
-        order.setOrderedQuantity(quantity);
-        order.setShippingAddress(shippingAddress);
-        order.setTotalAmount(totalAmount);
-        order.setOrderStatus("PENDING_PAYMENT");
+    public Order createOrder(Customer customer, List<CartItem> cartItems,
+            String shippingAddress) {
+        try {
+            Order order = new Order();
+            order.setCustomer(customer);
+            order.setShippingAddress(shippingAddress);
+            order.setOrderStatus("PENDING_PAYMENT");
 
-        // Update stock
-        productService.updateStock(product.getProductId(), quantity);
+            List<OrderItem> orderItems = new ArrayList<>();
+            Double totalAmount = 0.0;
 
-        return orderRepository.save(order);
+            for (CartItem cartItem : cartItems) {
+                Double productPrice = cartItem.getProduct().getPrice();
+                if (productPrice == null) {
+                    throw new IllegalArgumentException(
+                            "Product price is null for product: " + cartItem.getProduct().getProductId());
+                }
+
+                OrderItem orderItem = new OrderItem();
+                orderItem.setOrder(order);
+                orderItem.setProduct(cartItem.getProduct());
+                orderItem.setQuantity(cartItem.getQuantity());
+                orderItem.setUnitPrice(productPrice);
+                orderItem.setTotalPrice(productPrice * cartItem.getQuantity());
+
+                orderItems.add(orderItem);
+                totalAmount += orderItem.getTotalPrice();
+
+                // Update stock
+                productService.updateStock(cartItem.getProduct().getProductId(), cartItem.getQuantity());
+            }
+
+            order.setOrderItems(orderItems);
+            order.setTotalAmount(totalAmount);
+
+            // Save the order first to get the ID
+            Order savedOrder = orderRepository.save(order);
+
+            // Update the order reference in each OrderItem and save them
+            for (OrderItem orderItem : orderItems) {
+                orderItem.setOrder(savedOrder);
+                orderItemRepository.save(orderItem);
+            }
+
+            return savedOrder;
+        } catch (Exception e) {
+            System.err.println("Error in createOrder: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     public List<Order> getCustomerOrders(Customer customer) {

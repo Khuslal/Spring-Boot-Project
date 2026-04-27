@@ -2,6 +2,7 @@ package com.mobile_shop.mobile_shop.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "orders")
@@ -15,12 +16,8 @@ public class Order {
     @JoinColumn(name = "customer_id", nullable = false)
     private Customer customer;
 
-    @ManyToOne
-    @JoinColumn(name = "product_id", nullable = false)
-    private Product product;
-
-    @Column(name = "ordered_quantity")
-    private Integer orderedQuantity;
+    @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
+    private List<OrderItem> orderItems;
 
     @Column(name = "order_status")
     private String orderStatus = "PENDING_PAYMENT";
@@ -57,20 +54,12 @@ public class Order {
         this.customer = customer;
     }
 
-    public Product getProduct() {
-        return product;
+    public List<OrderItem> getOrderItems() {
+        return orderItems;
     }
 
-    public void setProduct(Product product) {
-        this.product = product;
-    }
-
-    public Integer getOrderedQuantity() {
-        return orderedQuantity;
-    }
-
-    public void setOrderedQuantity(Integer orderedQuantity) {
-        this.orderedQuantity = orderedQuantity;
+    public void setOrderItems(List<OrderItem> orderItems) {
+        this.orderItems = orderItems;
     }
 
     public String getOrderStatus() {
