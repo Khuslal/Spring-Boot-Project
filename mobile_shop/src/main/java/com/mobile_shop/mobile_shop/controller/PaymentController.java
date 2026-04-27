@@ -83,15 +83,16 @@ public class PaymentController {
 
             Order order = orderOpt.get();
 
-            // Add payment data to model for the form
+            // Generate a fresh transaction UUID for this payment attempt
+            String transactionUuid = paymentService.generatePaymentReferenceId();
             model.addAttribute("orderId", orderId);
             model.addAttribute("amount", String.format("%.2f", order.getTotalAmount()));
             model.addAttribute("totalAmount", String.format("%.2f", order.getTotalAmount()));
-            model.addAttribute("transactionUuid", String.valueOf(orderId));
+            model.addAttribute("transactionUuid", transactionUuid);
             model.addAttribute("productCode", paymentService.getMerchantCode());
             model.addAttribute("successUrl", paymentService.getSuccessUrl());
             model.addAttribute("failureUrl", paymentService.getFailureUrl());
-            model.addAttribute("signature", paymentService.generateSignature(orderId, order.getTotalAmount()));
+            model.addAttribute("signature", paymentService.generateSignature(order.getTotalAmount(), transactionUuid));
 
             // Return the payment form view
             return "customer/esewa-pay";

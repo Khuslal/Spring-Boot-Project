@@ -104,21 +104,9 @@ public class PaymentService {
      * @param totalAmount The total amount to pay
      * @return HMAC-SHA256 signature
      */
-    public String generateSignature(Long orderId, Double totalAmount) {
-        Optional<Order> orderOpt = orderRepository.findById(orderId);
-        if (orderOpt.isEmpty()) {
-            throw new RuntimeException("Order not found with ID: " + orderId);
-        }
-
-        Order order = orderOpt.get();
-        Double amountToPay = order.getTotalAmount();
-
-        // Use order ID as transaction UUID (must be alphanumeric and hyphen only)
-        String transactionUuid = String.valueOf(orderId);
-
-        // Generate signature using persisted order amount
+    public String generateSignature(Double totalAmount, String transactionUuid) {
         String signatureMessage = EsewaSignatureUtil.buildSignatureMessage(
-                amountToPay,
+                totalAmount,
                 transactionUuid,
                 merchantCode);
         return EsewaSignatureUtil.generateSignature(merchantSecret, signatureMessage);
