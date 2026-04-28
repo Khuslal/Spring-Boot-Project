@@ -104,11 +104,16 @@
                 <div class="order-details">
                     <div class="detail-row">
                         <span class="detail-label">Order ID:</span>
-                        <span class="detail-value" th:text="${orderId}">ORD-001</span>
+                        <span class="detail-value" th:text="${order != null} ? order.orderId : orderId">ORD-001</span>
                     </div>
                     <div class="detail-row">
-                        <span class="detail-label">Transaction ID:</span>
-                        <span class="detail-value" th:text="${refId}">TXN-123456</span>
+                        <span class="detail-label">Transaction UUID:</span>
+                        <span class="detail-value"
+                            th:text="${order != null} ? order.paymentRefId : orderId">ORD-123456</span>
+                    </div>
+                    <div class="detail-row" th:if="${order != null} and ${order.paymentGatewayRefId} != null">
+                        <span class="detail-label">eSewa Ref ID:</span>
+                        <span class="detail-value" th:text="${order.paymentGatewayRefId}">REF123456</span>
                     </div>
                     <div class="detail-row">
                         <span class="detail-label">Payment Method:</span>
@@ -116,11 +121,12 @@
                     </div>
                     <div class="detail-row">
                         <span class="detail-label">Payment Status:</span>
-                        <span class="detail-value text-success">Completed</span>
+                        <span class="detail-value text-success" th:text="${paymentStatus}">Completed</span>
                     </div>
                     <div class="detail-row">
                         <span class="detail-label">Order Status:</span>
-                        <span class="detail-value text-primary">Processing</span>
+                        <span class="detail-value text-primary"
+                            th:text="${order != null} ? order.orderStatus : 'Processing'">Processing</span>
                     </div>
                 </div>
 

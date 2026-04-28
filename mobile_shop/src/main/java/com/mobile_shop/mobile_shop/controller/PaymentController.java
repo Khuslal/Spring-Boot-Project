@@ -8,11 +8,18 @@ import com.mobile_shop.mobile_shop.service.CartService;
 import com.mobile_shop.mobile_shop.service.ProductService;
 import com.mobile_shop.mobile_shop.service.PaymentService;
 import com.mobile_shop.mobile_shop.repository.CustomerRepository;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -20,6 +27,8 @@ import java.util.Optional;
 @Controller
 @RequestMapping("/payment")
 public class PaymentController {
+
+    private static final Logger logger = LoggerFactory.getLogger(PaymentController.class);
 
     @Autowired
     private OrderService orderService;
@@ -83,8 +92,12 @@ public class PaymentController {
 
             Order order = orderOpt.get();
 
-            // Generate a fresh transaction UUID for this payment attempt
+            // Generate a fresh transaction UUID for this payment attempt and persist it on
+            // the order
             String transactionUuid = paymentService.generatePaymentReferenceId();
+            order.setPaymentRefId(transactionUuid);
+            orderService.save(order);
+
             model.addAttribute("orderId", orderId);
             model.addAttribute("amount", String.format("%.2f", order.getTotalAmount()));
             model.addAttribute("totalAmount", String.format("%.2f", order.getTotalAmount()));
@@ -105,44 +118,134 @@ public class PaymentController {
 
     /**
      * Handle payment success callback from eSewa
-     * eSewa redirects here with: ?oid=ORDER_ID&amt=AMOUNT&refId=REFERENCE_ID
      */
-    @GetMapping("/success")
-    public String paymentSuccess(
-            @RequestParam String oid,
-            @RequestParam String amt,
-            @RequestParam(required = false) String refId,
-            Model model) {
+    @RequestMapping(value = "/success", method = { RequestMethod.GET, RequestMethod.POST })
+    public String paymentSuccess(HttpServletRequest request, Model model) {
+        String oid = getParameter(request, "oid", "transaction_uuid", "transactionUuid");
+        String amt = getParameter(request, "amt", "total_amount", "amount");
+        String refId = getParameter(request, "refId", "ref_id", "reference_id");
+        String status = getParameter(request, "status", "payment_status");
+        String data = getParameter(request, "data");
 
-        // Process the success
-        String result = paymentService.processSuccess(oid, amt, refId);
+        String transactionUuid = oid;
+        String totalAmount = amt;
 
-        Optional<Order> orderOpt = orderService.getOrderById(Long.parseLong(oid));
-        if (orderOpt.isPresent()) {
-            Order order = orderOpt.get();
-            model.addAttribute("order", order);
+        if (data != null && !data.isBlank()) {
+            Map<String, String> parsed = parseEsewaData(data);
+            if (parsed.containsKey("transaction_uuid")) {
+                transactionUuid = parsed.get("transaction_uuid");
+            }
+            if (parsed.containsKey("total_amount")) {
+                totalAmount = parsed.get("total_amount");
+            }
+            if (parsed.containsKey("ref_id")) {
+                refId = parsed.get("ref_id");
+            }
+            if (parsed.containsKey("status")) {
+                status = parsed.get("status");
+            }
         }
 
-        model.addAttribute("orderId", oid);
+        if (transactionUuid == null || transactionUuid.isBlank()) {
+            transactionUuid = getParameter(request, "transaction_uuid", "oid", "orderId");
+        }
+        if (totalAmount == null || totalAmount.isBlank()) {
+            totalAmount = getParameter(request, "amt", "amount", "total_amount");
+        }
+        if (status == null || status.isBlank()) {
+            status = getParameter(request, "status", "payment_status");
+        }
+
+        logger.debug(
+                "Payment success callback received: transactionUuid={}, totalAmount={}, refId={}, status={}, dataPresent={}",
+                transactionUuid, totalAmount, refId, status, data != null);
+
+        String result = paymentService.processSuccessByPaymentRefId(transactionUuid, totalAmount, refId);
+
+        Optional<Order> orderOpt = orderService.getOrderByPaymentRefId(transactionUuid);
+        if (orderOpt.isPresent()) {
+            model.addAttribute("order", orderOpt.get());
+        }
+
+        model.addAttribute("orderId", transactionUuid != null ? transactionUuid : "N/A");
         model.addAttribute("refId", refId != null ? refId : "N/A");
-        model.addAttribute("success", "Payment successful! Your order has been placed.");
+        model.addAttribute("paymentStatus", status != null ? status : "COMPLETED");
+        model.addAttribute("success", result);
         return "customer/payment-success";
+    }
+
+    private Map<String, String> parseEsewaData(String data) {
+        try {
+            String payload = data;
+            if (!payload.trim().startsWith("{") && !payload.trim().startsWith("[")) {
+                try {
+                    byte[] decoded = Base64.getDecoder().decode(payload);
+                    payload = new String(decoded, java.nio.charset.StandardCharsets.UTF_8);
+                } catch (IllegalArgumentException ex) {
+                    logger.warn("Failed to Base64 decode eSewa data payload; trying JSON parse directly", ex);
+                }
+            }
+
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.readValue(payload, new TypeReference<HashMap<String, String>>() {
+            });
+        } catch (Exception e) {
+            logger.warn("Unable to parse eSewa callback data payload", e);
+            return new HashMap<>();
+        }
+    }
+
+    private String getParameter(HttpServletRequest request, String... names) {
+        for (String name : names) {
+            String value = request.getParameter(name);
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return null;
     }
 
     /**
      * Handle payment failure callback from eSewa
      */
-    @GetMapping("/failure")
-    public String paymentFailure(@RequestParam String oid, Model model) {
-        // Process the failure
-        paymentService.processFailure(oid);
+    @RequestMapping(value = "/failure", method = { RequestMethod.GET, RequestMethod.POST })
+    public String paymentFailure(HttpServletRequest request, Model model) {
+        String transactionUuid = getParameter(request, "oid", "transaction_uuid", "transactionUuid");
+        String refId = getParameter(request, "refId", "ref_id", "reference_id");
+        String status = getParameter(request, "status", "payment_status");
+        String data = getParameter(request, "data");
 
-        Optional<Order> orderOpt = orderService.getOrderById(Long.parseLong(oid));
-        if (orderOpt.isPresent()) {
-            Order order = orderOpt.get();
-            model.addAttribute("order", order);
+        if (data != null && !data.isBlank()) {
+            Map<String, String> parsed = parseEsewaData(data);
+            if (parsed.containsKey("transaction_uuid")) {
+                transactionUuid = parsed.get("transaction_uuid");
+            }
+            if (parsed.containsKey("ref_id")) {
+                refId = parsed.get("ref_id");
+            }
+            if (parsed.containsKey("status")) {
+                status = parsed.get("status");
+            }
+        }
+        if (transactionUuid == null || transactionUuid.isBlank()) {
+            transactionUuid = getParameter(request, "orderId", "transaction_uuid", "oid");
+        }
+        if (status == null || status.isBlank()) {
+            status = "FAILED";
         }
 
+        logger.debug("Payment failure callback received: transactionUuid={}, refId={}, status={}, dataPresent={}",
+                transactionUuid, refId, status, data != null);
+
+        paymentService.processFailureByPaymentRefId(transactionUuid);
+
+        Optional<Order> orderOpt = orderService.getOrderByPaymentRefId(transactionUuid);
+        if (orderOpt.isPresent()) {
+            model.addAttribute("order", orderOpt.get());
+        }
+
+        model.addAttribute("refId", refId != null ? refId : "N/A");
+        model.addAttribute("paymentStatus", status);
         model.addAttribute("error", "Payment failed. Please try again.");
         return "customer/payment-failed";
     }

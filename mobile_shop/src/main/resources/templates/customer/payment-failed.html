@@ -97,13 +97,33 @@
             <div class="error-details">
                 <div class="alert alert-danger">
                     <h6><i class="fas fa-exclamation-triangle me-2"></i>Payment Error</h6>
-                    <p class="mb-0">Your payment could not be completed. This might be due to:</p>
+                    <p class="mb-2" th:text="${error}">Your payment could not be completed. This might be due to:</p>
                     <ul class="mb-0 mt-2">
                         <li>Insufficient funds in your eSewa account</li>
                         <li>Invalid payment credentials</li>
                         <li>Network connectivity issues</li>
                         <li>Temporary service unavailability</li>
                     </ul>
+                </div>
+
+                <div class="order-summary mb-3" th:if="${order} != null">
+                    <h6>Order details</h6>
+                    <div class="summary-item">
+                        <span>Order ID:</span>
+                        <strong th:text="${order.orderId}">ORD-001</strong>
+                    </div>
+                    <div class="summary-item">
+                        <span>Transaction UUID:</span>
+                        <strong th:text="${order.paymentRefId}">ORD-123456</strong>
+                    </div>
+                    <div class="summary-item" th:if="${order.paymentGatewayRefId} != null">
+                        <span>eSewa Ref ID:</span>
+                        <strong th:text="${order.paymentGatewayRefId}">REF-123456</strong>
+                    </div>
+                    <div class="summary-item">
+                        <span>Payment Status:</span>
+                        <strong th:text="${paymentStatus}">FAILED</strong>
+                    </div>
                 </div>
 
                 <div class="troubleshooting-steps">

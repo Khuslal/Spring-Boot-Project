@@ -37,6 +37,9 @@ public class Order {
     @Column(name = "payment_ref_id")
     private String paymentRefId;
 
+    @Column(name = "payment_gateway_ref_id")
+    private String paymentGatewayRefId;
+
     // GETTERS AND SETTERS
     public Long getOrderId() {
         return orderId;
@@ -108,6 +111,14 @@ public class Order {
 
     public void setPaymentRefId(String paymentRefId) {
         this.paymentRefId = paymentRefId;
+    }
+
+    public String getPaymentGatewayRefId() {
+        return paymentGatewayRefId;
+    }
+
+    public void setPaymentGatewayRefId(String paymentGatewayRefId) {
+        this.paymentGatewayRefId = paymentGatewayRefId;
     }
 
     @PrePersist
