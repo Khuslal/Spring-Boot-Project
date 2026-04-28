@@ -89,6 +89,10 @@ public class OrderService {
         return orderRepository.findByPaymentRefId(paymentRefId);
     }
 
+    public Optional<Order> getOrderByPaymentGatewayRefId(String paymentGatewayRefId) {
+        return orderRepository.findByPaymentGatewayRefId(paymentGatewayRefId);
+    }
+
     public Order updateOrderStatus(Long orderId, String status) {
         Optional<Order> orderOpt = orderRepository.findById(orderId);
         if (orderOpt.isPresent()) {

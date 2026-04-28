@@ -121,57 +121,108 @@ public class PaymentController {
      */
     @RequestMapping(value = "/success", method = { RequestMethod.GET, RequestMethod.POST })
     public String paymentSuccess(HttpServletRequest request, Model model) {
-        String oid = getParameter(request, "oid", "transaction_uuid", "transactionUuid");
-        String amt = getParameter(request, "amt", "total_amount", "amount");
-        String refId = getParameter(request, "refId", "ref_id", "reference_id");
-        String status = getParameter(request, "status", "payment_status");
-        String data = getParameter(request, "data");
+        try {
+            String oid = getParameter(request, "oid", "transaction_uuid", "transactionUuid");
+            String amt = getParameter(request, "amt", "total_amount", "amount");
+            String refId = getParameter(request, "refId", "ref_id", "reference_id");
+            String status = getParameter(request, "status", "payment_status");
+            String data = getParameter(request, "data");
 
-        String transactionUuid = oid;
-        String totalAmount = amt;
+            logger.info("Raw parameters - oid: {}, amt: {}, refId: {}, status: {}, data: {}", oid, amt, refId, status,
+                    data != null ? "present" : "null");
 
-        if (data != null && !data.isBlank()) {
-            Map<String, String> parsed = parseEsewaData(data);
-            if (parsed.containsKey("transaction_uuid")) {
-                transactionUuid = parsed.get("transaction_uuid");
+            String transactionUuid = oid;
+            String totalAmount = amt;
+
+            if (data != null && !data.isBlank()) {
+                Map<String, String> parsed = parseEsewaData(data);
+                logger.info("Parsed eSewa data: {}", parsed);
+                if (parsed.containsKey("transaction_uuid")) {
+                    transactionUuid = parsed.get("transaction_uuid");
+                }
+                if (parsed.containsKey("total_amount")) {
+                    totalAmount = parsed.get("total_amount");
+                }
+                if (parsed.containsKey("ref_id")) {
+                    refId = parsed.get("ref_id");
+                }
+                if (parsed.containsKey("status")) {
+                    status = parsed.get("status");
+                }
             }
-            if (parsed.containsKey("total_amount")) {
-                totalAmount = parsed.get("total_amount");
+
+            if (transactionUuid == null || transactionUuid.isBlank()) {
+                transactionUuid = getParameter(request, "transaction_uuid", "oid", "orderId");
             }
-            if (parsed.containsKey("ref_id")) {
-                refId = parsed.get("ref_id");
+            if (totalAmount == null || totalAmount.isBlank()) {
+                totalAmount = getParameter(request, "amt", "amount", "total_amount");
             }
-            if (parsed.containsKey("status")) {
-                status = parsed.get("status");
+            if (status == null || status.isBlank()) {
+                status = "COMPLETED";
             }
-        }
 
-        if (transactionUuid == null || transactionUuid.isBlank()) {
-            transactionUuid = getParameter(request, "transaction_uuid", "oid", "orderId");
-        }
-        if (totalAmount == null || totalAmount.isBlank()) {
-            totalAmount = getParameter(request, "amt", "amount", "total_amount");
-        }
-        if (status == null || status.isBlank()) {
-            status = getParameter(request, "status", "payment_status");
-        }
+            logger.info(
+                    "Payment success callback received: transactionUuid={}, totalAmount={}, refId={}, status={}",
+                    transactionUuid, totalAmount, refId, status);
 
-        logger.debug(
-                "Payment success callback received: transactionUuid={}, totalAmount={}, refId={}, status={}, dataPresent={}",
-                transactionUuid, totalAmount, refId, status, data != null);
+            String result = paymentService.processSuccessByPaymentRefId(transactionUuid, totalAmount, refId);
+            logger.info("Payment processing result: {}", result);
 
-        String result = paymentService.processSuccessByPaymentRefId(transactionUuid, totalAmount, refId);
+            Optional<Order> orderOpt = orderService.getOrderByPaymentRefId(transactionUuid);
+            if (!orderOpt.isPresent()) {
+                orderOpt = orderService.getOrderByPaymentGatewayRefId(transactionUuid);
+            }
+            if (!orderOpt.isPresent()) {
+                try {
+                    Long orderId = Long.parseLong(transactionUuid);
+                    orderOpt = orderService.getOrderById(orderId);
+                } catch (NumberFormatException ignored) {
+                    // transactionUuid was not a numeric order ID, ignore
+                }
+            }
 
-        Optional<Order> orderOpt = orderService.getOrderByPaymentRefId(transactionUuid);
-        if (orderOpt.isPresent()) {
-            model.addAttribute("order", orderOpt.get());
+            if (orderOpt.isPresent()) {
+                Order order = orderOpt.get();
+                logger.info("Order found: orderId={}, status={}, items={}", order.getOrderId(), order.getOrderStatus(),
+                        order.getOrderItems() != null ? order.getOrderItems().size() : 0);
+                model.addAttribute("order", order);
+            } else {
+                logger.warn("No order found for transactionUuid: {}", transactionUuid);
+            }
+
+            model.addAttribute("displayOrderNumber",
+                    orderOpt.map(order -> order.getOrderId() != null ? order.getOrderId().toString() : null)
+                            .orElse(transactionUuid != null ? transactionUuid : "N/A"));
+            model.addAttribute("displayOrderDate",
+                    orderOpt.map(order -> order.getOrderDate() != null ? order.getOrderDate().toString() : "N/A")
+                            .orElse("N/A"));
+            model.addAttribute("displayCustomerEmail",
+                    orderOpt.map(order -> order.getCustomer() != null ? order.getCustomer().getEmail() : "N/A")
+                            .orElse("N/A"));
+            model.addAttribute("displayShippingAddress",
+                    orderOpt.map(order -> order.getShippingAddress() != null ? order.getShippingAddress() : "N/A")
+                            .orElse("N/A"));
+            model.addAttribute("displayTransactionUuid", transactionUuid != null ? transactionUuid : "N/A");
+            model.addAttribute("displayPaymentReference", refId != null ? refId : "N/A");
+            model.addAttribute("displayPaymentMethod", "eSewa");
+            model.addAttribute("displayAmount", totalAmount != null ? ("NPR " + totalAmount) : "NPR 0.00");
+            model.addAttribute("displayPaymentStatus", status != null ? status : "COMPLETED");
+            model.addAttribute("displayOrderStatus",
+                    orderOpt.map(Order::getOrderStatus).orElse("PROCESSING"));
+            model.addAttribute("success", result);
+
+            logger.info("Rendering payment success page with attributes: orderNumber={}, paymentStatus={}",
+                    model.asMap().get("displayOrderNumber"), model.asMap().get("displayPaymentStatus"));
+            return "customer/payment-success";
+        } catch (Exception e) {
+            logger.error("Error processing payment success callback", e);
+            e.printStackTrace();
+            model.addAttribute("status", 500);
+            model.addAttribute("message",
+                    "An error occurred while processing your payment confirmation. Please contact support. Error: "
+                            + e.getMessage());
+            return "error";
         }
-
-        model.addAttribute("orderId", transactionUuid != null ? transactionUuid : "N/A");
-        model.addAttribute("refId", refId != null ? refId : "N/A");
-        model.addAttribute("paymentStatus", status != null ? status : "COMPLETED");
-        model.addAttribute("success", result);
-        return "customer/payment-success";
     }
 
     private Map<String, String> parseEsewaData(String data) {
@@ -179,7 +230,7 @@ public class PaymentController {
             String payload = data;
             if (!payload.trim().startsWith("{") && !payload.trim().startsWith("[")) {
                 try {
-                    byte[] decoded = Base64.getDecoder().decode(payload);
+                    byte[] decoded = Base64.getDecoder().decode(payload.replace(' ', '+'));
                     payload = new String(decoded, java.nio.charset.StandardCharsets.UTF_8);
                 } catch (IllegalArgumentException ex) {
                     logger.warn("Failed to Base64 decode eSewa data payload; trying JSON parse directly", ex);

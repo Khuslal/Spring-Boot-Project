@@ -14,6 +14,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     Optional<Order> findByPaymentRefId(String paymentRefId);
 
+    Optional<Order> findByPaymentGatewayRefId(String paymentGatewayRefId);
+
     @Query("SELECT SUM(o.totalAmount) FROM Order o WHERE o.orderStatus = :status")
     Double getTotalRevenueByStatus(String status);
 

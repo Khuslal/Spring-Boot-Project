@@ -98,45 +98,64 @@
             <div class="order-confirmation">
                 <div class="confirmation-header">
                     <h5>Order Confirmation</h5>
-                    <p class="text-muted">Thank you for your purchase. Here are your order details:</p>
+                    <p class="text-muted">Thank you for your purchase. Your payment was successful and your order is now
+                        being processed.</p>
+                    <p class="text-success" th:if="${success != null}" th:text="${success}"></p>
+                    <p class="text-danger" th:if="${error != null}" th:text="${error}"></p>
                 </div>
 
                 <div class="order-details">
                     <div class="detail-row">
-                        <span class="detail-label">Order ID:</span>
-                        <span class="detail-value" th:text="${order != null} ? order.orderId : orderId">ORD-001</span>
+                        <span class="detail-label">Order Number</span>
+                        <span class="detail-value" th:text="${displayOrderNumber}">ORD-001</span>
                     </div>
                     <div class="detail-row">
-                        <span class="detail-label">Transaction UUID:</span>
-                        <span class="detail-value"
-                            th:text="${order != null} ? order.paymentRefId : orderId">ORD-123456</span>
-                    </div>
-                    <div class="detail-row" th:if="${order != null} and ${order.paymentGatewayRefId} != null">
-                        <span class="detail-label">eSewa Ref ID:</span>
-                        <span class="detail-value" th:text="${order.paymentGatewayRefId}">REF123456</span>
+                        <span class="detail-label">Order Date</span>
+                        <span class="detail-value" th:text="${displayOrderDate}">01 Jan 2026 15:30</span>
                     </div>
                     <div class="detail-row">
-                        <span class="detail-label">Payment Method:</span>
-                        <span class="detail-value">eSewa</span>
+                        <span class="detail-label">Customer Email</span>
+                        <span class="detail-value" th:text="${displayCustomerEmail}">customer@example.com</span>
                     </div>
                     <div class="detail-row">
-                        <span class="detail-label">Payment Status:</span>
-                        <span class="detail-value text-success" th:text="${paymentStatus}">Completed</span>
+                        <span class="detail-label">Shipping Address</span>
+                        <span class="detail-value" th:text="${displayShippingAddress}">123 Main Street, Kathmandu</span>
                     </div>
                     <div class="detail-row">
-                        <span class="detail-label">Order Status:</span>
-                        <span class="detail-value text-primary"
-                            th:text="${order != null} ? order.orderStatus : 'Processing'">Processing</span>
+                        <span class="detail-label">Transaction UUID</span>
+                        <span class="detail-value" th:text="${displayTransactionUuid}">ORD-123456</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Payment Reference</span>
+                        <span class="detail-value" th:text="${displayPaymentReference}">REF123456</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Payment Method</span>
+                        <span class="detail-value" th:text="${displayPaymentMethod}">eSewa</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Amount Paid</span>
+                        <span class="detail-value" th:text="${displayAmount}">NPR 100.00</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Payment Status</span>
+                        <span class="detail-value text-success" th:text="${displayPaymentStatus}">COMPLETE</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Order Status</span>
+                        <span class="detail-value text-primary" th:text="${displayOrderStatus}">PROCESSING</span>
                     </div>
                 </div>
 
                 <div class="next-steps mt-4">
                     <h6>What happens next?</h6>
                     <ul class="steps-list">
-                        <li><i class="fas fa-check-circle text-success me-2"></i>Your payment has been confirmed</li>
-                        <li><i class="fas fa-clock text-warning me-2"></i>We'll prepare your order for shipping</li>
-                        <li><i class="fas fa-truck text-info me-2"></i>You'll receive shipping updates via email</li>
-                        <li><i class="fas fa-box-open text-primary me-2"></i>Estimated delivery: 3-5 business days</li>
+                        <li><i class="fas fa-check-circle text-success me-2"></i>Payment confirmed by eSewa</li>
+                        <li><i class="fas fa-box-open text-primary me-2"></i>Your order is being prepared for dispatch
+                        </li>
+                        <li><i class="fas fa-envelope text-info me-2"></i>Shipping updates will be emailed to you</li>
+                        <li><i class="fas fa-calendar-alt text-warning me-2"></i>Delivery expected in 3-5 business days
+                        </li>
                     </ul>
                 </div>
             </div>

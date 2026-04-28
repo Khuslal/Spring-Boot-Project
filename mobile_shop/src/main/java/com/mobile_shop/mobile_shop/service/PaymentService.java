@@ -89,6 +89,17 @@ public class PaymentService {
             }
 
             Optional<Order> orderOpt = orderRepository.findByPaymentRefId(paymentRefId);
+            if (!orderOpt.isPresent()) {
+                orderOpt = orderRepository.findByPaymentGatewayRefId(paymentRefId);
+            }
+            if (!orderOpt.isPresent()) {
+                try {
+                    Long orderId = Long.parseLong(paymentRefId);
+                    orderOpt = orderRepository.findById(orderId);
+                } catch (NumberFormatException ignored) {
+                    // Ignore if not numeric
+                }
+            }
             if (orderOpt.isPresent()) {
                 Order order = orderOpt.get();
                 double paidAmount = order.getTotalAmount();
